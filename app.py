@@ -31,6 +31,9 @@ def findQuery(table, id):
 def findAllQuery(table):
     return ("SELECT * FROM {}".format(table))
 
+def insert_people_query(firstname, lastname):
+    return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{firstname}', '{lastname}');")
+
 def find(table, id):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
@@ -50,6 +53,16 @@ def findAll(table):
     disconnectDatabase(cnx)
     return results
 
+def insert_people(firstname, lastname):
+    cnx = connectToDatabase()
+    cursor = createCursor(cnx)
+    cursor.execute(insert_people_query(firstname, lastname))
+    cnx.commit()
+    last_id = cursor.lastrowid
+    closeCursor(cursor)
+    disconnectDatabase(cnx)
+    return last_id
+
 def printPerson(person):
     print("#{}: {} {}".format(person['id'], person['firstname'], person['lastname']))
 
@@ -62,11 +75,15 @@ parser.add_argument('context', choices=['people', 'movies'], help='Le contexte d
 
 action_subparser = parser.add_subparsers(title='action', dest='action')
 
-list_parser = action_subparser.add_parser('list', help='Liste les entitÃ©es du contexte')
-list_parser.add_argument('--export' , help='Chemin du fichier exportÃ©')
+list_parser = action_subparser.add_parser('list', help='Liste les entitées du contexte')
+list_parser.add_argument('--export' , help='Chemin du fichier exporté')
 
-find_parser = action_subparser.add_parser('find', help='Trouve une entitÃ© selon un paramÃ¨tre')
-find_parser.add_argument('id' , help='Identifant Ã  rechercher')
+find_parser = action_subparser.add_parser('find', help='Trouve une entité selon un paramètre')
+find_parser.add_argument('id' , help='Identifant à rechercher')
+
+insert_parser = action_subparser.add_parser('insert', help='Insert une nouvelle personne')
+insert_parser.add_argument('--firstname' , help='Prénom de la nouvelle personne')
+insert_parser.add_argument('--lastname' , help='Nom de la nouvelle personne')
 
 args = parser.parse_args()
 
@@ -87,6 +104,10 @@ if args.context == "people":
         people = find("people", peopleId)
         for person in people:
             printPerson(person)
+    if args.action == "insert":
+        print(f"Insertion d'une nouvelle personne: {args.firstname} {args.lastname}")
+        people_id = insert_people(firstname=args.firstname, lastname=args.lastname)
+        print(f"Nouvelle personne insérée avec l'id '{people_id}'")
 
 if args.context == "movies":
     if args.action == "list":  
