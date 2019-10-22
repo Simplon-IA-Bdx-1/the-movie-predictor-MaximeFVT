@@ -95,6 +95,9 @@ list_parser.add_argument('--export' , help='Chemin du fichier exporté')
 find_parser = action_subparser.add_parser('find', help='Trouve une entité selon un paramètre')
 find_parser.add_argument('id' , help='Identifant à rechercher')
 
+import_parser = action_subparser.add_parser('import', help='Importer un fichier CSV')
+import_parser.add_argument('--file', help='Chemin vers le fichier à importer', required=True)
+
 insert_parser = action_subparser.add_parser('insert', help='Insert une nouvelle entité')
 known_args = parser.parse_known_args()[0]
 
@@ -108,6 +111,8 @@ if known_args.context == "movies":
     insert_parser.add_argument('--original-title' , help='Titre original', required=True)
     insert_parser.add_argument('--release-date' , help='Date de sortie en France', required=True)
     insert_parser.add_argument('--rating' , help='Classification du film', choices=('TP', '-12', '-16'), required=True)
+
+
 
 args = parser.parse_args()
 
@@ -153,3 +158,15 @@ if args.context == "movies":
             release_date=args.release_date
         )
         print(f"Nouveau film inséré avec l'id '{movie_id}'")
+    if args.action == "import":
+        with open(args.file, 'r', encoding='utf-8', newline='\n') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                movie_id = insert_movie(
+                    title=row['title'],
+                    original_title=row['original_title'],
+                    duration=row['duration'],
+                    rating=row['rating'],
+                    release_date=row['release_date']
+                )
+                print(f"Nouveau film inséré avec l'id '{movie_id}'")
