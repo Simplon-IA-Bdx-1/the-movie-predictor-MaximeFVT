@@ -34,6 +34,10 @@ def findAllQuery(table):
 def insert_people_query(firstname, lastname):
     return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{firstname}', '{lastname}');")
 
+def insert_movie_query(title, original_title, duration, rating, release_date):
+    return (f"INSERT INTO `movies` (`title`, `original_title`, `duration`, `rating`, `release_date`) VALUES ('{title}', '{original_title}', {duration}, '{rating}', '{release_date}');")
+
+
 def find(table, id):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
@@ -63,6 +67,16 @@ def insert_people(firstname, lastname):
     disconnectDatabase(cnx)
     return last_id
 
+def insert_movie(title, original_title, duration, rating, release_date):
+    cnx = connectToDatabase()
+    cursor = createCursor(cnx)
+    cursor.execute(insert_movie_query(title, original_title, duration, rating, release_date))
+    cnx.commit()
+    last_id = cursor.lastrowid
+    closeCursor(cursor)
+    disconnectDatabase(cnx)
+    return last_id
+
 def printPerson(person):
     print("#{}: {} {}".format(person['id'], person['firstname'], person['lastname']))
 
@@ -71,7 +85,7 @@ def printMovie(movie):
 
 parser = argparse.ArgumentParser(description='Process MoviePredictor data')
 
-parser.add_argument('context', choices=['people', 'movies'], help='Le contexte dans lequel nous allons travailler')
+parser.add_argument('context', choices=('people', 'movies'), help='Le contexte dans lequel nous allons travailler')
 
 action_subparser = parser.add_subparsers(title='action', dest='action')
 
@@ -81,9 +95,19 @@ list_parser.add_argument('--export' , help='Chemin du fichier exporté')
 find_parser = action_subparser.add_parser('find', help='Trouve une entité selon un paramètre')
 find_parser.add_argument('id' , help='Identifant à rechercher')
 
-insert_parser = action_subparser.add_parser('insert', help='Insert une nouvelle personne')
-insert_parser.add_argument('--firstname' , help='Prénom de la nouvelle personne')
-insert_parser.add_argument('--lastname' , help='Nom de la nouvelle personne')
+insert_parser = action_subparser.add_parser('insert', help='Insert une nouvelle entité')
+known_args = parser.parse_known_args()[0]
+
+if known_args.context == "people":
+    insert_parser.add_argument('--firstname' , help='Prénom de la nouvelle personne', required=True)
+    insert_parser.add_argument('--lastname' , help='Nom de la nouvelle personne', required=True)
+
+if known_args.context == "movies":
+    insert_parser.add_argument('--title' , help='Titre en France', required=True)
+    insert_parser.add_argument('--duration' , help='Durée du film', type=int, required=True)
+    insert_parser.add_argument('--original-title' , help='Titre original', required=True)
+    insert_parser.add_argument('--release-date' , help='Date de sortie en France', required=True)
+    insert_parser.add_argument('--rating' , help='Classification du film', choices=('TP', '-12', '-16'), required=True)
 
 args = parser.parse_args()
 
@@ -119,3 +143,13 @@ if args.context == "movies":
         movies = find("movies", movieId)
         for movie in movies:
             printMovie(movie)
+    if args.action == "insert":
+        print(f"Insertion d'un nouveau film: {args.title}")
+        movie_id = insert_movie(
+            title=args.title,
+            original_title=args.original_title,
+            duration=args.duration,
+            rating=args.rating,
+            release_date=args.release_date
+        )
+        print(f"Nouveau film inséré avec l'id '{movie_id}'")
