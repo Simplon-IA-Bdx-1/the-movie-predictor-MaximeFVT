@@ -10,6 +10,8 @@ import mysql.connector
 import sys
 import argparse
 import csv
+from bs4 import BeautifulSoup
+
 
 def connectToDatabase():
     return mysql.connector.connect(user='predictor', password='predictor',
