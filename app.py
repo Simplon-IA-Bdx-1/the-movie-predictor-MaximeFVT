@@ -10,8 +10,10 @@ import mysql.connector
 import sys
 import argparse
 import csv
-from bs4 import BeautifulSoup
 
+from movie import Movie
+from person import Person
+from omdb import OMDB
 
 def connectToDatabase():
     return mysql.connector.connect(user='predictor', password='predictor',
@@ -28,16 +30,16 @@ def closeCursor(cursor):
     cursor.close()
 
 def findQuery(table, id):
-    return ("SELECT * FROM {} WHERE id = {}".format(table, id))
+    return ("SELECT * FROM {} WHERE id = {} LIMIT 1".format(table, id))
 
 def findAllQuery(table):
     return ("SELECT * FROM {}".format(table))
 
-def insert_people_query(firstname, lastname):
-    return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{firstname}', '{lastname}');")
+def insert_people_query(person):
+    return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{person.firstname}', '{person.lastname}');")
 
-def insert_movie_query(title, original_title, duration, rating, release_date):
-    return (f"INSERT INTO `movies` (`title`, `original_title`, `duration`, `rating`, `release_date`) VALUES ('{title}', '{original_title}', {duration}, '{rating}', '{release_date}');")
+def insert_movie_query(movie):
+    return (f"INSERT INTO `movies` (`title`, `original_title`, `duration`, `rating`, `release_date`, `revenu`) VALUES ('{movie.title}', '{movie.original_title}', {movie.duration}, '{movie.rating}', '{movie.release_date}', '{movie.revenu}');")
 
 
 def find(table, id):
@@ -46,33 +48,72 @@ def find(table, id):
     query = findQuery(table, id)
     cursor.execute(query)
     results = cursor.fetchall()
+
+    entity = None
+    if (cursor.rowcount == 1):
+        row = results[0]
+        if (table == "movies"):
+            entity = Movie(row['title'], row['original_title'], row['duration'], row['release_date'], row['rating'])
+
+        if (table == "people"):
+            entity = Person(
+                row['firstname'],
+                row['lastname']
+            )
+        
+        entity.id = row['id']
+
     closeCursor(cursor)
     disconnectDatabase(cnx)
-    return results
+
+    return entity
 
 def findAll(table):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
     cursor.execute(findAllQuery(table))
-    results = cursor.fetchall()
+    results = cursor.fetchall() # liste de dictionnaires contenant des valeurs scalaires
     closeCursor(cursor)
     disconnectDatabase(cnx)
-    return results
+    if (table == "movies"):
+        movies = []
+        for result in results: # result: dictionnaire avec id, title, ...
+            movie = Movie(
+                title=result['title'],
+                original_title=result['original_title'],
+                duration=result['duration'],
+                release_date=result['release_date'],
+                rating=result['rating']
+            )
+            movie.id = result['id']
+            movies.append(movie)
+        return movies
 
-def insert_people(firstname, lastname):
+    if (table == "people"):
+        people = []
+        for result in results: # result: dictionnaire avec id, title, ...
+            person = Person(
+                firstname=result['firstname'],
+                lastname=result['lastname'],
+            )
+            person.id = result['id']
+            people.append(person)
+        return people
+
+def insert_people(person):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
-    cursor.execute(insert_people_query(firstname, lastname))
+    cursor.execute(insert_people_query(person))
     cnx.commit()
     last_id = cursor.lastrowid
     closeCursor(cursor)
     disconnectDatabase(cnx)
     return last_id
 
-def insert_movie(title, original_title, duration, rating, release_date):
+def insert_movie(movie):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
-    cursor.execute(insert_movie_query(title, original_title, duration, rating, release_date))
+    cursor.execute(insert_movie_query(movie))
     cnx.commit()
     last_id = cursor.lastrowid
     closeCursor(cursor)
@@ -80,14 +121,19 @@ def insert_movie(title, original_title, duration, rating, release_date):
     return last_id
 
 def printPerson(person):
-    print("#{}: {} {}".format(person['id'], person['firstname'], person['lastname']))
+    print("#{}: {} {}".format(person.id, person.firstname, person.lastname))
 
 def printMovie(movie):
-    print("#{}: {} released on {}".format(movie['id'], movie['title'], movie['release_date']))
+    print("#{}: {} released on {}".format(movie.id, movie.title, movie.release_date))
 
 parser = argparse.ArgumentParser(description='Process MoviePredictor data')
 
-parser.add_argument('context', choices=('people', 'movies'), help='Le contexte dans lequel nous allons travailler')
+parser.add_argument('context', choices=('people', 'movies', 'import'), help='Le contexte dans lequel nous allons travailler')
+
+known_args = parser.parse_known_args()[0]
+if known_args.context == "import":
+    parser.add_argument('--api', help='API utilisé', required=True)
+    parser.add_argument('--imdbId', help='Id IMDB du film cherché', required=True)
 
 action_subparser = parser.add_subparsers(title='action', dest='action')
 
@@ -116,28 +162,33 @@ if known_args.context == "movies":
 
 
 
-args = parser.parse_args()
 
+
+args = parser.parse_args()
+#print(args)
 if args.context == "people":
     if args.action == "list":
         people = findAll("people")
         if args.export:
             with open(args.export, 'w', encoding='utf-8', newline='\n') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow(people[0].keys())
+                writer.writerow(people[0].__dict__.keys())
                 for person in people:
-                    writer.writerow(person.values())
+                    writer.writerow(person.__dict__.values())
         else:
             for person in people:
                 printPerson(person)
     if args.action == "find":
         peopleId = args.id
-        people = find("people", peopleId)
-        for person in people:
-            printPerson(person)
+        person = find("people", peopleId)
+        printPerson(person)
     if args.action == "insert":
         print(f"Insertion d'une nouvelle personne: {args.firstname} {args.lastname}")
-        people_id = insert_people(firstname=args.firstname, lastname=args.lastname)
+        person = Person(
+            firstname=args.firstname,
+            lastname=args.lastname
+        )
+        people_id = insert_people(person)
         print(f"Nouvelle personne insérée avec l'id '{people_id}'")
 
 if args.context == "movies":
@@ -147,18 +198,15 @@ if args.context == "movies":
             printMovie(movie)
     if args.action == "find":  
         movieId = args.id
-        movies = find("movies", movieId)
-        for movie in movies:
+        movie = find("movies", movieId)
+        if (movie == None):
+            print(f"Aucun film avec l'id {movieId} n'a été trouvé ! Try Again!")
+        else:
             printMovie(movie)
     if args.action == "insert":
         print(f"Insertion d'un nouveau film: {args.title}")
-        movie_id = insert_movie(
-            title=args.title,
-            original_title=args.original_title,
-            duration=args.duration,
-            rating=args.rating,
-            release_date=args.release_date
-        )
+        movie = Movie(args.title, args.original_title, args.duration, args.release_date, args.rating)
+        movie_id = insert_movie(movie)
         print(f"Nouveau film inséré avec l'id '{movie_id}'")
     if args.action == "import":
         with open(args.file, 'r', encoding='utf-8', newline='\n') as csvfile:
@@ -172,3 +220,22 @@ if args.context == "movies":
                     release_date=row['release_date']
                 )
                 print(f"Nouveau film inséré avec l'id '{movie_id}'")
+
+if args.context == "import":
+    nouveau_film = OMDB(args.imdbId)
+    movie= Movie(nouveau_film.title, nouveau_film.original_title, nouveau_film.duration, nouveau_film.release_date, nouveau_film.rating)
+    movie.revenu = nouveau_film.revenu
+    movie_id = insert_movie(movie)
+    print(f"Nouveau film inséré avec l'id '{movie_id}'")
+    for person in range(len(nouveau_film.actors)):
+        actor = Person(                                             
+            firstname = nouveau_film.actors[person][0],   # nom
+            lastname = nouveau_film.actors[person][1])    # prénom
+        actor_id = insert_people(actor)
+        print(f"Nouvelle personne insérée avec l'id '{actor_id}'")
+
+    #print(nouveau_film.title)
+    #print(nouveau_film.duration)
+    #print(nouveau_film.release_date)
+    #print(nouveau_film.revenu)
+    
