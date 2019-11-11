@@ -9,6 +9,7 @@ CREATE TABLE `movies` (
 	`marketing_budget` int DEFAULT NULL,
 	`release_date` DATE NOT NULL,
 	`3d` bool NOT NULL DEFAULT '0',
+	`revenu` int(11) DEFAULT NULL,
 	PRIMARY KEY (`id`)
 );
 
