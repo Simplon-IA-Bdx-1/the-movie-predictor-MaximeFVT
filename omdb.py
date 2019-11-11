@@ -44,12 +44,12 @@ class OMDB:
         self.imdbId = data['imdbID']
         
 
-     #  self.revenu = 'NULL'
-        locale.setlocale(locale.LC_ALL, 'en_US.UTF8')  # on met en forme le revenu, en passant de $47,787,845 à 47787845 par ex
+     #  self.revenue = 'NULL'
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF8')  # on met en forme le revenue, en passant de $47,787,845 à 47787845 par ex
         if data['BoxOffice'] != "N/A":
-            self.revenu = int(locale.atof(data['BoxOffice'].strip("$")))
+            self.revenue = int(locale.atof(data['BoxOffice'].strip("$")))
         else:
-            self.revenu = None
+            self.revenue = None
         
 
         self.actors = []
