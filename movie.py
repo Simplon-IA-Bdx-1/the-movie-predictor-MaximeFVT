@@ -13,7 +13,7 @@ class Movie:
         self.is_3d = None
         self.production_budget = None
         self.marketing_budget = None
-        self.revenu = None
+        self.revenue = None
         
     def total_budget(self):
         if (self.production_budget == None or self.marketing_budget == None):
