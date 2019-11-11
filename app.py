@@ -12,6 +12,10 @@ from movie import Movie
 from person import Person
 from omdb import OMDB
 
+
+
+
+
 def connectToDatabase():
     load_dotenv()
     mysql_user = os.getenv('mysql_user')
@@ -42,10 +46,10 @@ def insert_people_query(person):
 
 def insert_movie_query(movie):
     insert_stmt = (
-        "INSERT INTO `movies`(`title`, `original_title`, `duration`, `rating`, `release_date`, `revenu`) "
+        "INSERT INTO `movies`(`title`, `original_title`, `duration`, `rating`, `release_date`, `revenue`) "
         "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    data = (movie.title, movie.original_title, movie.duration, movie.rating, movie.release_date, movie.revenu)
+    data = (movie.title, movie.original_title, movie.duration, movie.rating, movie.release_date, movie.revenue)
     return (insert_stmt, data)
 
 def find(table, id):
@@ -132,6 +136,11 @@ def printPerson(person):
 
 def printMovie(movie):
     print("#{}: {} released on {}".format(movie.id, movie.title, movie.release_date))
+
+
+
+
+
 
 parser = argparse.ArgumentParser(description='Process MoviePredictor data')
 
@@ -229,7 +238,7 @@ if args.context == "movies":
 if args.context == "import":
     nouveau_film = OMDB(args.imdbId)
     movie= Movie(nouveau_film.title, nouveau_film.original_title, nouveau_film.duration, nouveau_film.release_date, nouveau_film.rating)
-    movie.revenu = nouveau_film.revenu
+    movie.revenue = nouveau_film.revenue
     movie.imdbId = nouveau_film.imdbId
     movie_id = insert_movie(movie)
     print(f"Nouveau film inséré avec l'id '{movie_id}'")
