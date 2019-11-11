@@ -3,8 +3,22 @@ version 1.0
 
 # WHAT IS IT ?
 
+This app will predict the rating of a newly released movie, based on his multiple features.
+features can be for exemple marketing budget, release date, actors, directors, duration, ranking...
+
 # HOW DOES IT WORK ?
+
+The app compare a new movie to a large database based on the OMDB database.
+The app updates his database every wednesday, to make sure no movies are forgotten.
+Finally, the IA model included in the app will process the chosen movie with the large database and will predict his rating.
 
 # COMMANDS
 
+After reading the README and identify yourself with the .env file, please run the following command to add a random movie to the database.
+
+$ docker-compose up --build
+
+
 # CONTACTS
+
+Simplon -
