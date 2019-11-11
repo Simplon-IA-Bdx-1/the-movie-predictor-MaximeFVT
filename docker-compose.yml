@@ -1,14 +1,21 @@
 version: '3.7'
 
 services:
-
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - .:/usr/src/TheMoviePredictor
+    networks:
+      - database_net
+    command: tail -f /dev/null
   database:
     image: mysql:latest
-    environment:
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
-      - MYSQL_USER=predictor
-      - MYSQL_PASSWORD=predictor
-      - MYSQL_DATABASE=predictor
+    environment: 
+      - MYSQL_RANDOM_ROOT_PASSWORD=${mysql_random_root_password}
+      - MYSQL_USER=${mysql_user}
+      - MYSQL_PASSWORD=${mysql_password}
+      - MYSQL_DATABASE=${mysql_database}
     networks:
       - database_net
     ports:

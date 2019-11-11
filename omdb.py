@@ -16,7 +16,7 @@ class OMDB:
         
                 
         load_dotenv()
-        API_KEY = os.getenv('api_key')
+        API_KEY = os.getenv('OMDB_api_key')
 
         data = requests.get(f"http://www.omdbapi.com/?apikey={API_KEY}&i={id}").json()  # on va chercher l'id du film sur l'API, en incluant la key
 
@@ -31,12 +31,25 @@ class OMDB:
 
         self.original_title = data['Title']
 
-        self.rating = "TP"
+        self.rating = data['Rated']
+        if self.rating == "PG":
+            self.rating = "TP"
+        if self.rating == "PG-13":
+            self.rating = "-12"
+        if self.rating == "R":
+            self.rating = "-16"
+        if self.rating == "NC-17":
+            self.rating = "-18"
+        
+        self.imdbId = data['imdbID']
+        
 
      #  self.revenu = 'NULL'
         locale.setlocale(locale.LC_ALL, 'en_US.UTF8')  # on met en forme le revenu, en passant de $47,787,845 à 47787845 par ex
         if data['BoxOffice'] != "N/A":
             self.revenu = int(locale.atof(data['BoxOffice'].strip("$")))
+        else:
+            self.revenu = None
         
 
         self.actors = []

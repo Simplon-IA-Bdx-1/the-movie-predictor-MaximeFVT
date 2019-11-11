@@ -14,7 +14,7 @@ class Movie:
         self.production_budget = None
         self.marketing_budget = None
         self.revenu = None
-
+        
     def total_budget(self):
         if (self.production_budget == None or self.marketing_budget == None):
             return None

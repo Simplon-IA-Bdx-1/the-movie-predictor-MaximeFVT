@@ -1,24 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-TheMoviePredictor script
-Author: Arnaud de Mouhy <arnaud@admds.net>
-"""
-
 import mysql.connector
 import sys
 import argparse
 import csv
+import os
+from dotenv import load_dotenv
 
 from movie import Movie
 from person import Person
 from omdb import OMDB
 
 def connectToDatabase():
-    return mysql.connector.connect(user='predictor', password='predictor',
-                              host='127.0.0.1',
-                              database='predictor')
+    load_dotenv()
+    mysql_user = os.getenv('mysql_user')
+    mysql_password = os.getenv('mysql_password')
+    mysql_host = os.getenv('mysql_host')
+    mysql_database = os.getenv('mysql_database')
+    return mysql.connector.connect(user=mysql_user, password=mysql_password,
+                              host=mysql_host,
+                              database=mysql_database)
 
 def disconnectDatabase(cnx):
     cnx.close()
@@ -39,8 +41,12 @@ def insert_people_query(person):
     return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{person.firstname}', '{person.lastname}');")
 
 def insert_movie_query(movie):
-    return (f"INSERT INTO `movies` (`title`, `original_title`, `duration`, `rating`, `release_date`, `revenu`) VALUES ('{movie.title}', '{movie.original_title}', {movie.duration}, '{movie.rating}', '{movie.release_date}', '{movie.revenu}');")
-
+    insert_stmt = (
+        "INSERT INTO `movies`(`title`, `original_title`, `duration`, `rating`, `release_date`, `revenu`) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
+    )
+    data = (movie.title, movie.original_title, movie.duration, movie.rating, movie.release_date, movie.revenu)
+    return (insert_stmt, data)
 
 def find(table, id):
     cnx = connectToDatabase()
@@ -113,7 +119,8 @@ def insert_people(person):
 def insert_movie(movie):
     cnx = connectToDatabase()
     cursor = createCursor(cnx)
-    cursor.execute(insert_movie_query(movie))
+    (insert_stmt, data) = insert_movie_query(movie)
+    cursor.execute(insert_stmt, params=data)
     cnx.commit()
     last_id = cursor.lastrowid
     closeCursor(cursor)
@@ -161,11 +168,8 @@ if known_args.context == "movies":
     insert_parser.add_argument('--rating' , help='Classification du film', choices=('TP', '-12', '-16'), required=True)
 
 
-
-
-
 args = parser.parse_args()
-#print(args)
+
 if args.context == "people":
     if args.action == "list":
         people = findAll("people")
@@ -212,19 +216,21 @@ if args.context == "movies":
         with open(args.file, 'r', encoding='utf-8', newline='\n') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                movie_id = insert_movie(
+                movie = Movie(
                     title=row['title'],
                     original_title=row['original_title'],
                     duration=row['duration'],
                     rating=row['rating'],
                     release_date=row['release_date']
                 )
+                movie_id = insert_movie(movie)
                 print(f"Nouveau film inséré avec l'id '{movie_id}'")
 
 if args.context == "import":
     nouveau_film = OMDB(args.imdbId)
     movie= Movie(nouveau_film.title, nouveau_film.original_title, nouveau_film.duration, nouveau_film.release_date, nouveau_film.rating)
     movie.revenu = nouveau_film.revenu
+    movie.imdbId = nouveau_film.imdbId
     movie_id = insert_movie(movie)
     print(f"Nouveau film inséré avec l'id '{movie_id}'")
     for person in range(len(nouveau_film.actors)):
@@ -233,9 +239,3 @@ if args.context == "import":
             lastname = nouveau_film.actors[person][1])    # prénom
         actor_id = insert_people(actor)
         print(f"Nouvelle personne insérée avec l'id '{actor_id}'")
-
-    #print(nouveau_film.title)
-    #print(nouveau_film.duration)
-    #print(nouveau_film.release_date)
-    #print(nouveau_film.revenu)
-    

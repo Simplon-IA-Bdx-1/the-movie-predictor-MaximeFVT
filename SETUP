@@ -1,0 +1,11 @@
+## To use the Movie Predictor, you'll need to create in you current working folder a .env file. 
+
+# please copy and paste the following, and add your own passwords for the API keys and MYSQL database.
+
+
+OMDB_api_key=XXXXXX
+
+MYSQL_RANDOM_ROOT_PASSWORD=XXXXXX
+MYSQL_USER=XXXXXX
+MYSQL_PASSWORD=XXXXXX
+MYSQL_DATABASE=XXXXXX
