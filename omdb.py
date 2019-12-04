@@ -53,3 +53,9 @@ class OMDB:
         for person in range(len(actor)):  # dans tout le range de la liste actor, on separe nom et prenom, grace au split avant et apres l'espace " "
             name_separated = actor[person].strip().split(' ')
             self.actors.append(name_separated)
+
+        self.director = []
+        director = data['Director'].split(',')  
+        for person in range(len(director)): 
+            name_separated = director[person].strip().split(' ')
+            self.director.append(name_separated)
