@@ -12,9 +12,7 @@ from movie import Movie
 from person import Person
 from omdb import OMDB
 
-
-
-
+#fonction
 
 def connectToDatabase():
     load_dotenv()
@@ -40,6 +38,11 @@ def findQuery(table, id):
 
 def findAllQuery(table):
     return ("SELECT * FROM {}".format(table))
+
+
+def insert_movie_people_role_query(movie_id, person_id, role_id):
+    return (f"INSERT INTO `movie_people_role`(`movie_id`, `people_id`, `role_id`) VALUES ('{movie_id}', '{person_id}', '{role_id}');")
+
 
 def insert_people_query(person):
     return (f"INSERT INTO `people` (`firstname`, `lastname`) VALUES ('{person.firstname}', '{person.lastname}');")
@@ -131,14 +134,27 @@ def insert_movie(movie):
     disconnectDatabase(cnx)
     return last_id
 
+
+def insert_movie_people_role(movie_id, person_id, role_id):
+    cnx = connectToDatabase()
+    cursor = createCursor(cnx)
+    query = insert_movie_people_role_query(movie_id, person_id, role_id)
+    cursor.execute(query)
+    cnx.commit()
+    last_id = cursor.lastrowid
+    closeCursor(cursor)
+    disconnectDatabase(cnx)
+    return last_id
+
+  
+  
+   
+
 def printPerson(person):
     print("#{}: {} {}".format(person.id, person.firstname, person.lastname))
 
 def printMovie(movie):
     print("#{}: {} released on {}".format(movie.id, movie.title, movie.release_date))
-
-
-
 
 
 
@@ -148,7 +164,7 @@ parser.add_argument('context', choices=('people', 'movies', 'import'), help='Le 
 
 known_args = parser.parse_known_args()[0]
 if known_args.context == "import":
-    parser.add_argument('--api', help='API utilisé', required=True)
+    # parser.add_argument('--api', help='API utilisé', required=True)
     parser.add_argument('--imdbId', help='Id IMDB du film cherché', required=True)
 
 action_subparser = parser.add_subparsers(title='action', dest='action')
@@ -175,7 +191,6 @@ if known_args.context == "movies":
     insert_parser.add_argument('--original-title' , help='Titre original', required=True)
     insert_parser.add_argument('--release-date' , help='Date de sortie en France', required=True)
     insert_parser.add_argument('--rating' , help='Classification du film', choices=('TP', '-12', '-16'), required=True)
-
 
 args = parser.parse_args()
 
@@ -247,4 +262,5 @@ if args.context == "import":
             firstname = nouveau_film.actors[person][0],   # nom
             lastname = nouveau_film.actors[person][1])    # prénom
         actor_id = insert_people(actor)
-        print(f"Nouvelle personne insérée avec l'id '{actor_id}'")
+        insert_movie_people_role(movie_id, actor_id, 1)
+        print(f"Nouvelle personne insérée avec l'id '{actor_id}' avec le role '{1}' dans le film {movie_id}'")

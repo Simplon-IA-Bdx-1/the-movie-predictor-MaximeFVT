@@ -11,10 +11,6 @@ class OMDB:
     def __init__(self, id):
         self.id = id
         
-           
- #  def get_film(self, name):
-        
-                
         load_dotenv()
         API_KEY = os.getenv('OMDB_api_key')
 
@@ -58,9 +54,8 @@ class OMDB:
             name_separated = actor[person].strip().split(' ')
             self.actors.append(name_separated)
 
-        #for person in range(len(actor)):
-        #    self.actors.append(actor[person].split(', '))
-        #for person in data['Actors']:
-        #    self.people.append(data['Actors'[person]])
-        #self.people = data['Actors']
-        #print(self.actors)
+        self.director = []
+        director = data['Director'].split(',')  
+        for person in range(len(director)): 
+            name_separated = director[person].strip().split(' ')
+            self.director.append(name_separated)
